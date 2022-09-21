@@ -18,14 +18,11 @@ autoload -Uz _zi
 # PROMPT            #
 #####################
 export STARSHIP_CONFIG=$HOME/.config/zsh/starship.toml
-zi lucid for \
-  as"command" from"gh-r" \
-    atinit'\
-    export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] \
-    || PATH+=":$N_PREFIX/bin"' \
-    atload'eval "$(starship init zsh)"' bpick'*unknown-linux-gnu*' \
-    starship/starship
 
+zi ice as"command" from"gh-r" \
+  atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
+  atpull"%atclone" src"init.zsh"
+zi light starship/starship
 ##########################
 # OMZ Libs and Plugins   #
 ##########################
@@ -44,7 +41,8 @@ zi lucid for \
 atinit"\
   ZSH_TMUX_FIXTERM=true \
   ZSH_TMUX_AUTOSTART=true \
-  ZSH_TMUX_AUTOCONNECT=true" \
+  ZSH_TMUX_AUTOCONNECT=false \
+  ZSH_TMUX_UNICODE=true" \
 OMZP::tmux \
   atinit"HIST_STAMPS=dd.mm.yyyy" \
 OMZL::history.zsh \
@@ -139,7 +137,133 @@ as'command' atinit'export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* 
 from'gh-r' as'command' atinit'export PATH="$HOME/.yarn/bin:$PATH"' mv'yarn* -> yarn' pick"yarn/bin/yarn" bpick'*.tar.gz' \
   yarnpkg/yarn \
 
+  zi ice from'gh-r' as'program' mv'fd* fd' sbin'**/fd(.exe|) -> fd'
+zi light @sharkdp/fd
+
+zi ice from'gh-r' as'program' mv'bat* bat' sbin'**/bat(.exe|) -> bat'
+zi light @sharkdp/bat
+
+zi ice from'gh-r' as'program' mv'hexyl* hexyl' sbin'**/hexyl(.exe|) -> hexyl'
+zi light @sharkdp/hexyl
+
+zi ice from'gh-r' as'program' mv"hyperfine* hyperfine" sbin"**/hyperfine(.exe|) -> hyperfine"
+zi light @sharkdp/hyperfine
+
+zi ice from'gh-r' as'program' mv'vivid* vivid' sbin'**/vivid(.exe|) -> vivid'
+zi light @sharkdp/vivid
+
+zi ice from'gh-r' as'program' sbin'**/exa -> exa' atclone'cp -vf completions/exa.zsh _exa'
+zi light ogham/exa
+
+
+zi ice as"program" make'!' atclone'./direnv hook zsh > zhook.zsh' \
+  atpull'%atclone' src"zhook.zsh"
+zi light direnv/direnv
+
+zi ice as'program' from'gh-r' mv'gotcha_* -> gotcha'
+zi light b4b4r07/gotcha
+
+zi ice wait lucid as'program' cp'wd.sh -> wd' \
+  mv'_wd.sh -> _wd' atpull'!git reset --hard' pick'wd'
+zi light mfaerevaag/wd
+
+zi ice wait lucid as'program' pick'bin/git-dsf'
+zi load z-shell/zsh-diff-so-fancy
+
+zi ice lucid wait as'program' has'bat' pick'src/*'
+zi light eth-p/bat-extras
+
+zi ice lucid wait as'program' has'git' \
+  atclone"cp git-open.1.md $ZI[MAN_DIR]/man1/git-open.1" atpull'%atclone'
+zi light paulirish/git-open
+
+zi ice lucid wait as'program' pick'prettyping' has'ping'
+zi light denilsonsa/prettyping
+
+
+zi ice lucid wait as'program' has'perl' has'convert' pick'exiftool'
+zi light exiftool/exiftool
+
+zi for as'program' atclone"autoreconf -i; ./configure --prefix=$ZPFX" \
+  atpull'%atclone' make"all install" pick"$ZPFX/bin/cmatrix" \
+    abishekvashok/cmatrix
+
+zi ice atclone'PYENV_ROOT="$PWD" ./libexec/pyenv init - > zpyenv.zsh' \
+  atinit'export PYENV_ROOT="$PWD"' atpull"%atclone" \
+  as'program' pick'bin/pyenv' src"zpyenv.zsh" nocompile'!'
+zi light pyenv/pyenv
+
+zi ice as"program" wait lucid atinit"export PYTHONPATH=$ZPFX/lib/python3.10/site-packages/" \
+  atclone"PYTHONPATH=$ZPFX/lib/python3.10/site-packages/ python3 setup.py --quiet install --prefix $ZPFX" \
+  atpull"%atclone" test"0" pick"$ZPFX/bin/asciinema"
+zi load asciinema/asciinema
+
+zi ice rustup cargo'!lsd' id-as'lsd' as'program' nocompile
+zi load z-shell/0
+
+zi ice id-as"rust" wait"0" lucid rustup as"program" pick"bin/rustc" \
+  atload="export nocompile CARGO_HOME=\$PWD RUSTUP_HOME=\$PWD/rustup"
+zi load z-shell/0
+
+zi wait lucid for \
+  has'exa' atinit'AUTOCD=1' \
+    zplugin/zsh-exa
+
+# zi wait lucid for as"command" from"gh-r" sbin"grex" \
+#   pemistahl/grex
+
+# zi wait lucid for if"(( ! ${+commands[jq]} ))" as"null" \
+#   atclone"autoreconf -fi && ./configure --with-oniguruma=builtin && make \
+#   && ln -sfv $PWD/jq.1 $ZI[MAN_DIR]/man1" sbin"jq" \
+#     stedolan/jq
+
+
 
 #####################
 # Misc Stuff        #
 #####################
+
+
+setopt append_history         # Allow multiple sessions to append to one Zsh command history.
+setopt extended_history       # Show timestamp in history.
+setopt hist_expire_dups_first # Expire A duplicate event first when trimming history.
+setopt hist_find_no_dups      # Do not display a previously found event.
+setopt hist_ignore_all_dups   # Remove older duplicate entries from history.
+setopt hist_ignore_dups       # Do not record an event that was just recorded again.
+setopt hist_ignore_space      # Do not record an Event Starting With A Space.
+setopt hist_reduce_blanks     # Remove superfluous blanks from history items.
+setopt hist_save_no_dups      # Do not write a duplicate event to the history file.
+setopt hist_verify            # Do not execute immediately upon history expansion.
+setopt inc_append_history     # Write to the history file immediately, not when the shell exit
+
+setopt auto_cd              # Use cd by typing directory name if it's not a command.
+setopt auto_list            # Automatically list choices on ambiguous completion.
+setopt auto_pushd           # Make cd push the old directory onto the directory stack.
+setopt bang_hist            # Treat the '!' character, especially during Expansion.
+setopt interactive_comments # Comments even in interactive shells.
+setopt multios              # Implicit tees or cats when multiple redirections are attempted.
+setopt no_beep              # Don't beep on error.
+setopt prompt_subst         # Substitution of parameters inside the prompt each time the prompt is drawn.
+setopt pushd_ignore_dups    # Don't push multiple copies directory onto the directory stack.
+setopt pushd_minus
+
+zstyle ':completion:*:matches' group 'yes'
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:options' auto-description '%d'
+zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
+zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
+zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
+zstyle ':completion:*:default' list-prompt '%S%M matches%s'
+zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*' use-cache true
+zstyle ':completion:*' rehash true
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+eval "$(direnv hook zsh)"
+source <(/usr/bin/starship init zsh --print-full-init)
+tmux source ~/.tmux.conf
