@@ -1,4 +1,9 @@
 #!/usr/bin/env/zsh
+_systemctl_unit_state() {
+  typeset -gA _sys_unit_state
+  _sys_unit_state=( $(__systemctl list-unit-files "$PREFIX*" | awk '{print $1, $2}') )
+}
+
 
 # bindkey  vi-cmd-mode
 # bindkey -v
@@ -10,6 +15,7 @@ if [[ ! -f $HOME/.zi/bin/zi.zsh ]]; then
     print -P "%F{33}▓▒░ %F{34}Installation successful.%f%b" || \
     print -P "%F{160}▓▒░ The clone has failed.%f%b"
 fi
+source /etc/profile.d/fzf-extras.zsh
 source "$HOME/.zi/bin/zi.zsh"
 autoload -Uz _zi
 (( ${+_comps} )) && _comps[zi]=_zi
@@ -39,18 +45,19 @@ setopt promptsubst
 # - History plugin is loaded early (as it has some defaults) to prevent empty history stack for other plugins
 zi lucid for \
 atinit"\
-  ZSH_TMUX_FIXTERM=true \
+  ZSH_TMUX_FIXTERM_WITH_256COLOR=true \
   ZSH_TMUX_AUTOSTART=true \
   ZSH_TMUX_AUTOCONNECT=false \
-  ZSH_TMUX_UNICODE=true" \
+  ZSH_TMUX_UNICODE=true \
+  ZSH_TMUX_DEFAULT_SESSION_NAME=true" \
 OMZP::tmux \
   atinit"HIST_STAMPS=dd.mm.yyyy" \
 OMZL::history.zsh \
 
+# OMZL::completion.zsh \
 zi wait lucid for \
 OMZL::clipboard.zsh \
 OMZL::compfix.zsh \
-OMZL::completion.zsh \
 OMZL::correction.zsh \
   atload"\
   alias ..='cd ..' \
@@ -65,6 +72,7 @@ OMZL::spectrum.zsh \
 OMZL::termsupport.zsh \
   atload"\
   alias gcd='gco dev'" \
+OMZP::zsh-interactive-cd \
 OMZP::git \
   atload"\
   alias dcupb='docker-compose up --build'" \
@@ -74,7 +82,7 @@ OMZP::docker/_docker \
   djui/alias-tips \
 OMZP::systemd
   # hlissner/zsh-autopair \
-  # chriskempson/base16-shell \
+  # chriskempson/base16-shell
 
 #####################
 # PLUGINS           #
@@ -83,25 +91,26 @@ OMZP::systemd
 
 # IMPORTANT:
 # These plugins should be loaded after ohmyzsh plugins
+# atinit" \
+ # zstyle ':completion:*' completer _expand _complete _ignored _approximate
+  # zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' \
+  # zstyle ':completion:*' menu select=2 \
+  # zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s' \
+  # zstyle ':completion:*:descriptions' format '-- %d --' \
+  # zstyle ':completion:*:processes' command 'ps -au$USER' \
+  # zstyle ':completion:complete:*:options' sort false \
+  #  zstyle ':fzf-tab:complete:_zlua:*' query-string input \
+  # zstyle ':completion:*:*:*:*:processes' command 'ps -u $USER -o pid,user,comm,cmd -w -w' \
+# zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+# zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'
+zi ice atclone"dircolors -b LS_COLORS > c.zsh" \  atpull'%atclone' pick"c.zsh" nocompile'!'zi light trapd00r/LS_COLORS
 
 zi wait lucid for \
 light-mode atinit"ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20" atload"_zsh_autosuggest_start" \
   zsh-users/zsh-autosuggestions \
 light-mode atinit"typeset -gA FAST_HIGHLIGHT; FAST_HIGHLIGHT[git-cmsg-len]=100; zicompinit; zicdreplay;" \
   z-shell/F-Sy-H \
-light-mode blockf atpull'zi creinstall -q .' \
-atinit" \
-  zstyle ':completion:*' completer _expand _complete _ignored _approximate \
-  zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' \
-  zstyle ':completion:*' menu select=2 \
-  zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s' \
-  zstyle ':completion:*:descriptions' format '-- %d --' \
-  zstyle ':completion:*:processes' command 'ps -au$USER' \
-  zstyle ':completion:complete:*:options' sort false \
-  zstyle ':fzf-tab:complete:_zlua:*' query-string input \
-  zstyle ':completion:*:*:*:*:processes' command 'ps -u $USER -o pid,user,comm,cmd -w -w' \
-  zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap \
-  zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'" \
+light-mode blockf atpull'zi creinstall  .' \
   zsh-users/zsh-completions \
 bindmap"^R -> ^H" atinit"\
   zstyle :history-search-multi-word page-size 10 \
@@ -111,8 +120,7 @@ bindmap"^R -> ^H" atinit"\
 reset \
 atclone"local P=${${(M)OSTYPE:#*darwin*}:+g}${P}sed -i '/DIR/c\DIR 38;5;63;1' LS_COLORS; ${P}dircolors -b LS_COLORS > c.zsh" \
 atpull'%atclone' pick"c.zsh" nocompile'!' \
-atload'zstyle ":completion:*" list-colors “${(s.:.)LS_COLORS}”' \
-  trapd00r/LS_COLORS
+light-mode Aloxaf/fzf-tab
 
 # bindkey -rpM viins '^[^['
 MODE_CURSOR_VIINS="blinking block #59f176"
@@ -246,6 +254,43 @@ setopt no_beep              # Don't beep on error.
 setopt prompt_subst         # Substitution of parameters inside the prompt each time the prompt is drawn.
 setopt pushd_ignore_dups    # Don't push multiple copies directory onto the directory stack.
 setopt pushd_minus
+# give a preview of commandline arguments when completing `kill`
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w -w"
+# zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
+#   [[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w
+zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'
+zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' \
+	fzf-preview 'echo ${(P)word}'
+# it is an example. you can change it
+zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
+	'git diff $word | delta'
+zstyle ':fzf-tab:complete:git-log:*' fzf-preview \
+	'git log --color=always $word'
+zstyle ':fzf-tab:complete:git-help:*' fzf-preview \
+	'git help $word | bat -plman --color=always'
+zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
+	'case "$group" in
+	"commit tag") git show --color=always $word ;;
+	*) git show --color=always $word | delta ;;
+	esac'
+zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
+	'case "$group" in
+	"modified file") git diff $word | delta ;;
+	"recent commit object name") git show --color=always $word | delta ;;
+	*) git log --color=always $word ;;
+	esac'
+   zstyle ':fzf-tab:complete:-command-:*' fzf-preview \
+  \u00a6 '(out=$(tldr --color always "$word") 2>/dev/null && echo $out) || (out=$(MANWIDTH=$FZF_PREVIEW_COLUMNS man "$word") 2>/dev/null && echo $out) || (out=$(which "$word") && echo $out) || echo "${(P)word}"'
+
+
+
+
+
+
+
+
+
 
 zstyle ':completion:*:matches' group 'yes'
 zstyle ':completion:*:options' description 'yes'
@@ -263,7 +308,16 @@ zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*' use-cache true
 zstyle ':completion:*' rehash true
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-
+# # disable sort when completing `git checkout`
+# # zstyle ':completion:*:git-checkout:*' sort false
+# # set descriptions format to enable group support
+zstyle ':completion:*:descriptions' format '[%d]'
+# # set list-colors to enable filename colorizing
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# # preview directory's content with exa when completing cd
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+# # switch group using `,` and `.`
+zstyle ':fzf-tab:*' switch-group ',' '.'
 eval "$(direnv hook zsh)"
 source <(/usr/bin/starship init zsh --print-full-init)
-tmux source ~/.tmux.conf
+#tmux source ~/.tmux.conf
